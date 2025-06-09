@@ -1,6 +1,6 @@
 // src/pages/users/[userId].js
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
@@ -28,10 +28,131 @@ export default function UserProfilePage() {
 	const [fetchLoading, setFetchLoading] = useState(true);
 	const [fetchError, setFetchError] = useState(null);
 
-	// --- New state for the notes feature ---
+	// --- state for the notes feature ---
 	const [newNoteText, setNewNoteText] = useState("");
 	const [isSubmittingNote, setIsSubmittingNote] = useState(false);
 	const [noteError, setNoteError] = useState("");
+
+	// --- state for role management actions ---
+	const [actionStatus, setActionStatus] = useState({
+		loading: false,
+		message: "",
+		type: "", // 'success' or 'error'
+		action: null, // e.g., 'sync', 'assign-data', 'revoke-alerts'
+	});
+
+	// --- Data fetching function, now wrapped in useCallback ---
+	const fetchUserProfile = useCallback(async () => {
+		// Only fetch if we have a token and a userId
+		if (token && userId) {
+			setFetchLoading(true);
+			setFetchError(null);
+			try {
+				const response = await fetch(
+					`${process.env.NEXT_PUBLIC_MAIN_APP_API_URL}/admin/users/${userId}/profile`,
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
+				if (!response.ok) {
+					const errorData = await response.json();
+					throw new Error(
+						errorData.message || "Failed to fetch user profile."
+					);
+				}
+				const data = await response.json();
+				setProfileData(data);
+			} catch (error) {
+				console.error("Fetch user profile error:", error);
+				setFetchError(error.message);
+			} finally {
+				setFetchLoading(false);
+			}
+		}
+	}, [token, userId]);
+
+	// Initial data fetch effect
+	useEffect(() => {
+		fetchUserProfile();
+	}, [fetchUserProfile]);
+
+	// --- Action Handlers for Role Management ---
+	const performRoleAction = async (
+		endpoint,
+		body,
+		successMessage,
+		actionType
+	) => {
+		setActionStatus({
+			loading: true,
+			message: "",
+			type: "",
+			action: actionType,
+		});
+		try {
+			const response = await fetch(
+				`${process.env.NEXT_PUBLIC_MAIN_APP_API_URL}/admin/users/${userId}/${endpoint}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: body ? JSON.stringify(body) : undefined,
+				}
+			);
+			const data = await response.json();
+			if (!response.ok) throw new Error(data.message || "Action failed.");
+
+			setActionStatus({
+				loading: false,
+				message: data.message || successMessage,
+				type: "success",
+				action: actionType,
+			});
+			await fetchUserProfile(); // Re-fetch data to update the UI with new roles
+		} catch (err) {
+			console.error(`Error during ${actionType}:`, err);
+			setActionStatus({
+				loading: false,
+				message: err.message,
+				type: "error",
+				action: actionType,
+			});
+		}
+		setTimeout(
+			() =>
+				setActionStatus({
+					loading: false,
+					message: "",
+					type: "",
+					action: null,
+				}),
+			4000
+		);
+	};
+
+	const handleSyncRoles = () =>
+		performRoleAction(
+			"sync-roles",
+			null,
+			"Roles synced successfully!",
+			"sync"
+		);
+	const handleAssignRole = (roleId, roleName) =>
+		performRoleAction(
+			"assign-role",
+			{ roleId, roleName },
+			`${roleName} assigned!`,
+			`assign-${roleId}`
+		);
+	const handleRevokeRole = (roleId, roleName) =>
+		performRoleAction(
+			"revoke-role",
+			{ roleId, roleName },
+			`${roleName} revoked!`,
+			`revoke-${roleId}`
+		);
 
 	// Route protection effect
 	useEffect(() => {
@@ -152,6 +273,22 @@ export default function UserProfilePage() {
 	// Destructure for easier access
 	const { db: user, posthog } = profileData;
 
+	// --- Get Role IDs from Environment Variables ---
+	const discordRoleIds = {
+		data: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_CORE_ROLE_ID,
+		alerts: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_ALERTS_ROLE_ID,
+		bias: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_BIAS_ROLE_ID,
+	};
+	const isDataRoleAssigned = user.assignedRoleIds?.includes(
+		discordRoleIds.data
+	);
+	const isAlertsRoleAssigned = user.assignedRoleIds?.includes(
+		discordRoleIds.alerts
+	);
+	const isBiasRoleAssigned = user.assignedRoleIds?.includes(
+		discordRoleIds.bias
+	);
+
 	return (
 		<div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
 			<header className="mb-8">
@@ -254,6 +391,141 @@ export default function UserProfilePage() {
 									"No analytics properties found."}
 							</p>
 						)}
+					</div>
+
+					{/* --- New Role Management Card --- */}
+					<div className="bg-gray-800 rounded-lg shadow-lg p-6">
+						<h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
+							Role Management
+						</h2>
+						<div className="space-y-4">
+							<div>
+								<h3 className="text-sm font-medium text-gray-400 mb-2">
+									Assigned Role IDs
+								</h3>
+								<p className="font-mono text-xs bg-gray-900 p-2 rounded break-all">
+									{user.assignedRoleIds?.join(", ") || "None"}
+								</p>
+							</div>
+							<div>
+								<button
+									onClick={handleSyncRoles}
+									disabled={actionStatus.loading}
+									className="w-full text-sm bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+								>
+									{actionStatus.loading &&
+									actionStatus.action === "sync"
+										? "Syncing..."
+										: "Sync All Roles with Stripe"}
+								</button>
+							</div>
+							<div className="border-t border-gray-700 pt-4 space-y-3">
+								{/* Data Role */}
+								{discordRoleIds.data && (
+									<div className="flex justify-between items-center">
+										<span className="text-sm">
+											Weekly Data Role
+										</span>
+										<button
+											onClick={() =>
+												isDataRoleAssigned
+													? handleRevokeRole(
+															discordRoleIds.data,
+															"Weekly Data"
+													  )
+													: handleAssignRole(
+															discordRoleIds.data,
+															"Weekly Data"
+													  )
+											}
+											disabled={actionStatus.loading}
+											className={`px-3 py-1 text-xs rounded ${
+												isDataRoleAssigned
+													? "bg-red-600 hover:bg-red-700"
+													: "bg-green-600 hover:bg-green-700"
+											} disabled:opacity-50`}
+										>
+											{isDataRoleAssigned
+												? "Revoke"
+												: "Assign"}
+										</button>
+									</div>
+								)}
+								{/* Alerts Role */}
+								{discordRoleIds.alerts && (
+									<div className="flex justify-between items-center">
+										<span className="text-sm">
+											Weekly Alerts Role
+										</span>
+										<button
+											onClick={() =>
+												isAlertsRoleAssigned
+													? handleRevokeRole(
+															discordRoleIds.alerts,
+															"Weekly Alerts"
+													  )
+													: handleAssignRole(
+															discordRoleIds.alerts,
+															"Weekly Alerts"
+													  )
+											}
+											disabled={actionStatus.loading}
+											className={`px-3 py-1 text-xs rounded ${
+												isAlertsRoleAssigned
+													? "bg-red-600 hover:bg-red-700"
+													: "bg-green-600 hover:bg-green-700"
+											} disabled:opacity-50`}
+										>
+											{isAlertsRoleAssigned
+												? "Revoke"
+												: "Assign"}
+										</button>
+									</div>
+								)}
+								{/* Bias Role */}
+								{discordRoleIds.bias && (
+									<div className="flex justify-between items-center">
+										<span className="text-sm">
+											Weekly Bias Role
+										</span>
+										<button
+											onClick={() =>
+												isBiasRoleAssigned
+													? handleRevokeRole(
+															discordRoleIds.bias,
+															"Weekly Bias"
+													  )
+													: handleAssignRole(
+															discordRoleIds.bias,
+															"Weekly Bias"
+													  )
+											}
+											disabled={actionStatus.loading}
+											className={`px-3 py-1 text-xs rounded ${
+												isBiasRoleAssigned
+													? "bg-red-600 hover:bg-red-700"
+													: "bg-green-600 hover:bg-green-700"
+											} disabled:opacity-50`}
+										>
+											{isBiasRoleAssigned
+												? "Revoke"
+												: "Assign"}
+										</button>
+									</div>
+								)}
+							</div>
+							{actionStatus.message && (
+								<p
+									className={`text-xs mt-3 text-center ${
+										actionStatus.type === "success"
+											? "text-green-400"
+											: "text-red-400"
+									}`}
+								>
+									{actionStatus.message}
+								</p>
+							)}
+						</div>
 					</div>
 				</div>
 
