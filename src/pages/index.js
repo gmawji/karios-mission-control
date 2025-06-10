@@ -1,78 +1,51 @@
 // src/pages/index.js
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { useAuth } from "@/context/AuthContext"; // Import our custom auth hook
+import { useAuth } from "@/context/AuthContext";
+import Login from "@/components/Login"; // Import our new component
 
 export default function LoginPage() {
-	const [tokenInput, setTokenInput] = useState("");
-	const { login, isLoggedIn, loading } = useAuth(); // Get what we need from the auth context
+	const { login, isLoggedIn, loading } = useAuth();
 	const router = useRouter();
 
-	// This effect checks if the user is already logged in.
-	// If they are, it redirects them away from the login page to the dashboard.
+	// Adding a state here to pass the submitting status to the component
+	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// This effect still handles the redirect if a user is already logged in
 	useEffect(() => {
-		// We wait until the loading is false to ensure we have checked localStorage
 		if (!loading && isLoggedIn) {
 			router.push("/dashboard");
 		}
 	}, [isLoggedIn, loading, router]);
 
-	// This function is called when the login form is submitted.
-	const handleLogin = (e) => {
-		e.preventDefault();
-		if (tokenInput.trim()) {
-			login(tokenInput.trim()); // Call the login function from our context
-		}
+	// The login logic is simplified and passed down to the Login component
+	const handleLogin = (token) => {
+		setIsSubmitting(true);
+		login(token);
+		// The redirect will be handled by the useEffect above once isLoggedIn becomes true
 	};
 
-	// While we check for a stored token, we can show a loading indicator.
+	// While checking localStorage for a token, show a simple loader
 	if (loading) {
 		return (
-			<div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-				Loading...
+			<div className="min-h-screen bg-gray-100 dark:bg-dark-900 flex items-center justify-center">
+				<p className="text-gray-500 dark:text-gray-400">
+					Initializing...
+				</p>
 			</div>
 		);
 	}
 
-	// If the user is not logged in, show the login form.
+	// If we're not loading and not logged in, we render the main page layout
+	// which now contains our Login component.
 	return (
-		<div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col justify-center items-center">
-			<div className="text-center">
-				<h1 className="text-4xl font-bold dark:text-gray-100">
-					Karios Mission Control
-				</h1>
-				<p className="text-gray-500 dark:text-gray-400 mt-2">
-					Please enter your Admin API Token to continue.
-				</p>
-			</div>
-			<form
-				onSubmit={handleLogin}
-				className="mt-8 bg-white dark:bg-dark-700 p-8 border border-gray-300 dark:border-dark-450 rounded-xl shadow-xl w-full max-w-sm"
-			>
-				<div className="mb-4">
-					<label
-						htmlFor="apiToken"
-						className="block text-sm font-medium text-gray-300 mb-2"
-					>
-						API Token
-					</label>
-					<input
-						id="apiToken"
-						type="password" // Use password type to obscure the token
-						value={tokenInput}
-						onChange={(e) => setTokenInput(e.target.value)}
-						required
-						className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-						placeholder="Paste your token here..."
-					/>
-				</div>
-				<button
-					type="submit"
-					className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
-				>
-					Authenticate
-				</button>
-			</form>
+		<div className="min-h-full flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8">
+			{/* This check prevents the login form from flashing on screen for a moment
+        before the redirect effect kicks in for an already logged-in user.
+      */}
+			{!isLoggedIn && (
+				<Login onLogin={handleLogin} isLoggingIn={isSubmitting} />
+			)}
 		</div>
 	);
 }
