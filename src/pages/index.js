@@ -36,18 +36,18 @@ export default function LoginPage() {
 
 	// If the user is not logged in, show the login form.
 	return (
-		<div className="min-h-screen bg-gray-900 flex flex-col justify-center items-center">
+		<div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col justify-center items-center">
 			<div className="text-center">
-				<h1 className="text-4xl font-bold text-white">
+				<h1 className="text-4xl font-bold dark:text-gray-100">
 					Karios Mission Control
 				</h1>
-				<p className="text-gray-400 mt-2">
+				<p className="text-gray-500 dark:text-gray-400 mt-2">
 					Please enter your Admin API Token to continue.
 				</p>
 			</div>
 			<form
 				onSubmit={handleLogin}
-				className="mt-8 bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm"
+				className="mt-8 bg-white dark:bg-dark-700 p-8 border border-gray-300 dark:border-dark-450 rounded-xl shadow-xl w-full max-w-sm"
 			>
 				<div className="mb-4">
 					<label

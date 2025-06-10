@@ -1,19 +1,21 @@
 // src/pages/_app.js
 
 import "@/styles/globals.css";
-import { AuthProvider } from "@/context/AuthContext"; // Import our new AuthProvider
-
-// We are not using PostHog in this file yet, but we can set it up now for consistency.
-// Note: This would be a separate PostHog project or have different logic if needed.
-// For now, we'll omit the detailed PostHog setup here to focus on the auth flow.
+import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "next-themes"; // Import the ThemeProvider
+import Layout from "@/components/Layout"; // Import our new Layout
 
 function MyApp({ Component, pageProps }) {
 	return (
-		// Wrap the entire application with the AuthProvider.
-		// Now, any page or component can access the auth state using the useAuth() hook.
-		<AuthProvider>
-			<Component {...pageProps} />
-		</AuthProvider>
+		// The ThemeProvider enables dark mode switching across the app.
+		<ThemeProvider attribute="class" defaultTheme="dark">
+			<AuthProvider>
+				{/* The Layout component provides the consistent Header and Footer */}
+				<Layout>
+					<Component {...pageProps} />
+				</Layout>
+			</AuthProvider>
+		</ThemeProvider>
 	);
 }
 
