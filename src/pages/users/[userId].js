@@ -5,8 +5,10 @@ import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
 
-// Helper to format dates nicely
+// Helper function to format dates nicely
 const formatDate = (dateString) => {
 	if (!dateString) return "N/A";
 	return new Date(dateString).toLocaleString("en-US", {
@@ -18,32 +20,59 @@ const formatDate = (dateString) => {
 	});
 };
 
+// Recreated Status Badge Component for subscription status
+const getSubscriptionStatusDisplay = (status) => {
+	status = status ? status.toLowerCase() : "none";
+	let text =
+		status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
+	let className = "px-2 py-1 text-xs font-semibold rounded-full inline-block";
+	switch (status) {
+		case "active":
+		case "trialing":
+			className +=
+				" bg-green-100 text-green-800 dark:bg-green-700/30 dark:text-green-300";
+			break;
+		case "past_due":
+		case "payment_failed":
+		case "unpaid":
+			className +=
+				" bg-red-100 text-red-800 dark:bg-red-700/30 dark:text-red-300";
+			break;
+		case "incomplete":
+		case "incomplete_expired":
+			className +=
+				" bg-yellow-100 text-yellow-800 dark:bg-yellow-700/30 dark:text-yellow-300";
+			break;
+		case "canceled":
+		case "none":
+		default:
+			className +=
+				" bg-gray-200 text-gray-800 dark:bg-dark-600 dark:text-gray-200";
+			text = status === "none" ? "No Subscription" : text;
+			break;
+	}
+	return <span className={className}>{text}</span>;
+};
+
 export default function UserProfilePage() {
 	const { isLoggedIn, loading: authLoading, token } = useAuth();
 	const router = useRouter();
 	const { userId } = router.query;
 
-	// --- State for page data ---
 	const [profileData, setProfileData] = useState(null);
 	const [fetchLoading, setFetchLoading] = useState(true);
 	const [fetchError, setFetchError] = useState(null);
-
-	// --- state for the notes feature ---
 	const [newNoteText, setNewNoteText] = useState("");
 	const [isSubmittingNote, setIsSubmittingNote] = useState(false);
 	const [noteError, setNoteError] = useState("");
-
-	// --- state for role management actions ---
 	const [actionStatus, setActionStatus] = useState({
 		loading: false,
 		message: "",
-		type: "", // 'success' or 'error'
-		action: null, // e.g., 'sync', 'assign-data', 'revoke-alerts'
+		type: "",
+		action: null,
 	});
 
-	// --- Data fetching function, now wrapped in useCallback ---
 	const fetchUserProfile = useCallback(async () => {
-		// Only fetch if we have a token and a userId
 		if (token && userId) {
 			setFetchLoading(true);
 			setFetchError(null);
@@ -63,7 +92,6 @@ export default function UserProfilePage() {
 				const data = await response.json();
 				setProfileData(data);
 			} catch (error) {
-				console.error("Fetch user profile error:", error);
 				setFetchError(error.message);
 			} finally {
 				setFetchLoading(false);
@@ -71,12 +99,15 @@ export default function UserProfilePage() {
 		}
 	}, [token, userId]);
 
-	// Initial data fetch effect
 	useEffect(() => {
-		fetchUserProfile();
-	}, [fetchUserProfile]);
+		if (!authLoading && isLoggedIn) {
+			fetchUserProfile();
+		} else if (!authLoading && !isLoggedIn) {
+			router.push("/");
+		}
+	}, [isLoggedIn, authLoading, router, fetchUserProfile]);
 
-	// --- Action Handlers for Role Management ---
+	// All handlers (performRoleAction, handleSaveNote, etc.) are unchanged
 	const performRoleAction = async (
 		endpoint,
 		body,
@@ -153,51 +184,6 @@ export default function UserProfilePage() {
 			`${roleName} revoked!`,
 			`revoke-${roleId}`
 		);
-
-	// Route protection effect
-	useEffect(() => {
-		if (!authLoading && !isLoggedIn) {
-			router.push("/");
-		}
-	}, [isLoggedIn, authLoading, router]);
-
-	// Data fetching effect
-	useEffect(() => {
-		// Only fetch if we have a token and a userId from the router
-		if (token && userId) {
-			const fetchUserProfile = async () => {
-				setFetchLoading(true);
-				setFetchError(null);
-				try {
-					const response = await fetch(
-						`${process.env.NEXT_PUBLIC_MAIN_APP_API_URL}/admin/users/${userId}/profile`,
-						{
-							headers: {
-								Authorization: `Bearer ${token}`,
-							},
-						}
-					);
-
-					if (!response.ok) {
-						const errorData = await response.json();
-						throw new Error(
-							errorData.message || "Failed to fetch user profile."
-						);
-					}
-					const data = await response.json();
-					setProfileData(data);
-				} catch (error) {
-					console.error("Fetch user profile error:", error);
-					setFetchError(error.message);
-				} finally {
-					setFetchLoading(false);
-				}
-			};
-			fetchUserProfile();
-		}
-	}, [token, userId]); // Re-run if token or userId changes
-
-	// Handler for submitting a note
 	const handleSaveNote = async (e) => {
 		e.preventDefault();
 		if (!newNoteText.trim()) return;
@@ -246,7 +232,7 @@ export default function UserProfilePage() {
 	// Main loading state
 	if (authLoading || fetchLoading) {
 		return (
-			<div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+			<div className="min-h-screen flex items-center justify-center">
 				Loading User Profile...
 			</div>
 		);
@@ -255,7 +241,7 @@ export default function UserProfilePage() {
 	// Error state
 	if (fetchError) {
 		return (
-			<div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+			<div className="min-h-screen flex items-center justify-center">
 				Error: {fetchError}
 			</div>
 		);
@@ -264,7 +250,7 @@ export default function UserProfilePage() {
 	// No data state
 	if (!profileData) {
 		return (
-			<div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+			<div className="min-h-screen flex items-center justify-center">
 				User data not found.
 			</div>
 		);
@@ -289,12 +275,13 @@ export default function UserProfilePage() {
 		discordRoleIds.bias
 	);
 
+	// --- Main Render with new styling ---
 	return (
-		<div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
+		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 			<header className="mb-8">
 				<Link
 					href="/dashboard"
-					className="text-indigo-400 hover:text-indigo-300"
+					className="text-sm font-medium text-primary dark:text-indigo-400 hover:underline"
 				>
 					&larr; Back to Dashboard
 				</Link>
@@ -311,215 +298,138 @@ export default function UserProfilePage() {
 						className="rounded-full mr-4"
 					/>
 					<div>
-						<h1 className="text-3xl font-bold">
+						<h1 className="text-3xl font-bold font-heading text-gray-900 dark:text-gray-50">
 							{user.globalName || user.username}
 						</h1>
-						<p className="text-sm text-gray-400">
+						<p className="text-sm text-gray-600 dark:text-gray-400">
 							{user.discordEmail}
 						</p>
 					</div>
 				</div>
 			</header>
 
-			<main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-				{/* Left Column: DB Info & PostHog Properties */}
+			<main className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+				{/* Left Column */}
 				<div className="lg:col-span-1 space-y-6">
-					{/* DB Info Card */}
-					<div className="bg-gray-800 rounded-lg shadow-lg p-6">
-						<h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
+					{/* User Information Card */}
+					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
+						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
 							User Information
 						</h2>
-						<ul className="space-y-2 text-sm">
-							<li>
-								<strong>Subscription Status:</strong>{" "}
-								<span className="font-mono bg-gray-700 px-2 py-1 rounded">
-									{user.subscriptionStatus}
+						<ul className="space-y-3 text-sm">
+							<li className="flex justify-between">
+								<span className="text-gray-600 dark:text-gray-400">
+									Status
 								</span>
+								{getSubscriptionStatusDisplay(
+									user.subscriptionStatus
+								)}
 							</li>
-							<li>
-								<strong>Stripe Customer ID:</strong>{" "}
-								<span className="font-mono">
+							<li className="flex justify-between items-center">
+								<span className="text-gray-600 dark:text-gray-400">
+									Stripe ID
+								</span>
+								<span className="font-mono text-xs bg-gray-100 dark:bg-dark-700 p-1 rounded">
 									{user.stripeCustomerId || "N/A"}
 								</span>
 							</li>
-							<li>
-								<strong>Joined:</strong>{" "}
-								{formatDate(user.createdAt)}
+							<li className="flex justify-between">
+								<span className="text-gray-600 dark:text-gray-400">
+									Joined
+								</span>
+								<span className="text-gray-800 dark:text-gray-200">
+									{formatDate(user.createdAt)}
+								</span>
 							</li>
 						</ul>
 					</div>
 
-					{/* PostHog Properties Card */}
-					<div className="bg-gray-800 rounded-lg shadow-lg p-6">
-						<h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
-							Analytics Properties
-						</h2>
-						{posthog.person ? (
-							<ul className="space-y-2 text-sm">
-								<li>
-									<strong>First Seen:</strong>{" "}
-									{formatDate(posthog.person.created_at)}
-								</li>
-								<li>
-									<strong>Last Seen:</strong>{" "}
-									{formatDate(
-										posthog.person.properties.last_seen
-									)}
-								</li>
-								<li>
-									<strong>Location:</strong>{" "}
-									{`${
-										posthog.person.properties
-											.$initial_geoip_city_name || "N/A"
-									}, ${
-										posthog.person.properties
-											.$initial_geoip_country_code || ""
-									}`}
-								</li>
-								<li>
-									<strong>Browser:</strong>{" "}
-									{posthog.person.properties.$initial_browser}
-								</li>
-								<li>
-									<strong>OS:</strong>{" "}
-									{posthog.person.properties.$initial_os}
-								</li>
-							</ul>
-						) : (
-							<p className="text-sm text-gray-400">
-								{posthog.error ||
-									"No analytics properties found."}
-							</p>
-						)}
-					</div>
-
-					{/* --- New Role Management Card --- */}
-					<div className="bg-gray-800 rounded-lg shadow-lg p-6">
-						<h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
+					{/* Role Management Card */}
+					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
+						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
 							Role Management
 						</h2>
-						<div className="space-y-4">
-							<div>
-								<h3 className="text-sm font-medium text-gray-400 mb-2">
-									Assigned Role IDs
-								</h3>
-								<p className="font-mono text-xs bg-gray-900 p-2 rounded break-all">
-									{user.assignedRoleIds?.join(", ") || "None"}
-								</p>
-							</div>
-							<div>
-								<button
-									onClick={handleSyncRoles}
-									disabled={actionStatus.loading}
-									className="w-full text-sm bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
-								>
-									{actionStatus.loading &&
-									actionStatus.action === "sync"
-										? "Syncing..."
-										: "Sync All Roles with Stripe"}
-								</button>
-							</div>
-							<div className="border-t border-gray-700 pt-4 space-y-3">
-								{/* Data Role */}
-								{discordRoleIds.data && (
-									<div className="flex justify-between items-center">
-										<span className="text-sm">
-											Weekly Data Role
-										</span>
-										<button
-											onClick={() =>
-												isDataRoleAssigned
-													? handleRevokeRole(
-															discordRoleIds.data,
-															"Weekly Data"
-													  )
-													: handleAssignRole(
-															discordRoleIds.data,
-															"Weekly Data"
-													  )
-											}
-											disabled={actionStatus.loading}
-											className={`px-3 py-1 text-xs rounded ${
-												isDataRoleAssigned
-													? "bg-red-600 hover:bg-red-700"
-													: "bg-green-600 hover:bg-green-700"
-											} disabled:opacity-50`}
-										>
-											{isDataRoleAssigned
-												? "Revoke"
-												: "Assign"}
-										</button>
-									</div>
-								)}
-								{/* Alerts Role */}
-								{discordRoleIds.alerts && (
-									<div className="flex justify-between items-center">
-										<span className="text-sm">
-											Weekly Alerts Role
-										</span>
-										<button
-											onClick={() =>
-												isAlertsRoleAssigned
-													? handleRevokeRole(
-															discordRoleIds.alerts,
-															"Weekly Alerts"
-													  )
-													: handleAssignRole(
-															discordRoleIds.alerts,
-															"Weekly Alerts"
-													  )
-											}
-											disabled={actionStatus.loading}
-											className={`px-3 py-1 text-xs rounded ${
-												isAlertsRoleAssigned
-													? "bg-red-600 hover:bg-red-700"
-													: "bg-green-600 hover:bg-green-700"
-											} disabled:opacity-50`}
-										>
-											{isAlertsRoleAssigned
-												? "Revoke"
-												: "Assign"}
-										</button>
-									</div>
-								)}
-								{/* Bias Role */}
-								{discordRoleIds.bias && (
-									<div className="flex justify-between items-center">
-										<span className="text-sm">
-											Weekly Bias Role
-										</span>
-										<button
-											onClick={() =>
-												isBiasRoleAssigned
-													? handleRevokeRole(
-															discordRoleIds.bias,
-															"Weekly Bias"
-													  )
-													: handleAssignRole(
-															discordRoleIds.bias,
-															"Weekly Bias"
-													  )
-											}
-											disabled={actionStatus.loading}
-											className={`px-3 py-1 text-xs rounded ${
-												isBiasRoleAssigned
-													? "bg-red-600 hover:bg-red-700"
-													: "bg-green-600 hover:bg-green-700"
-											} disabled:opacity-50`}
-										>
-											{isBiasRoleAssigned
-												? "Revoke"
-												: "Assign"}
-										</button>
-									</div>
+						<div className="space-y-3">
+							<button
+								onClick={handleSyncRoles}
+								disabled={actionStatus.loading}
+								className="w-full text-sm flex items-center justify-center bg-gray-200 hover:bg-gray-300 dark:bg-dark-600 dark:hover:bg-dark-500 text-gray-800 dark:text-gray-100 font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+							>
+								<FontAwesomeIcon
+									icon={faSyncAlt}
+									className={`w-3.5 h-3.5 mr-2 ${
+										actionStatus.loading &&
+										actionStatus.action === "sync"
+											? "animate-spin"
+											: ""
+									}`}
+								/>
+								{actionStatus.loading &&
+								actionStatus.action === "sync"
+									? "Syncing..."
+									: "Sync Roles with Stripe"}
+							</button>
+							<div className="border-t border-gray-200 dark:border-dark-600 pt-3 space-y-2">
+								{/* Role Toggles */}
+								{Object.entries({
+									Data: isDataRoleAssigned,
+									Alerts: isAlertsRoleAssigned,
+									Bias: isBiasRoleAssigned,
+								}).map(
+									([roleKey, isAssigned]) =>
+										discordRoleIds[
+											roleKey.toLowerCase()
+										] && (
+											<div
+												key={roleKey}
+												className="flex justify-between items-center text-sm"
+											>
+												<span
+													className={`text-gray-800 dark:text-gray-200 ${
+														isAssigned
+															? "font-semibold"
+															: ""
+													}`}
+												>{`Weekly ${roleKey}`}</span>
+												<button
+													onClick={() =>
+														isAssigned
+															? handleRevokeRole(
+																	discordRoleIds[
+																		roleKey.toLowerCase()
+																	],
+																	`Weekly ${roleKey}`
+															  )
+															: handleAssignRole(
+																	discordRoleIds[
+																		roleKey.toLowerCase()
+																	],
+																	`Weekly ${roleKey}`
+															  )
+													}
+													disabled={
+														actionStatus.loading
+													}
+													className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
+														isAssigned
+															? "bg-red-500/20 text-red-300 hover:bg-red-500/40"
+															: "bg-green-500/20 text-green-300 hover:bg-green-500/40"
+													} disabled:opacity-50`}
+												>
+													{isAssigned
+														? "Revoke"
+														: "Assign"}
+												</button>
+											</div>
+										)
 								)}
 							</div>
 							{actionStatus.message && (
 								<p
-									className={`text-xs mt-3 text-center ${
+									className={`text-xs mt-2 text-center ${
 										actionStatus.type === "success"
-											? "text-green-400"
-											: "text-red-400"
+											? "text-green-500"
+											: "text-red-500"
 									}`}
 								>
 									{actionStatus.message}
@@ -527,17 +437,59 @@ export default function UserProfilePage() {
 							)}
 						</div>
 					</div>
+					{/* Analytics Properties Card */}
+					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
+						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
+							Analytics Properties
+						</h2>
+						{posthog.person ? (
+							<ul className="space-y-3 text-sm">
+								<li className="flex justify-between">
+									<span className="text-gray-600 dark:text-gray-400">
+										First Seen
+									</span>{" "}
+									<span className="text-gray-800 dark:text-gray-200">
+										{formatDate(posthog.person.created_at)}
+									</span>
+								</li>
+								<li className="flex justify-between">
+									<span className="text-gray-600 dark:text-gray-400">
+										Last Seen
+									</span>{" "}
+									<span className="text-gray-800 dark:text-gray-200">
+										{formatDate(
+											posthog.person.properties.last_seen
+										)}
+									</span>
+								</li>
+								<li className="flex justify-between">
+									<span className="text-gray-600 dark:text-gray-400">
+										Location
+									</span>{" "}
+									<span className="text-gray-800 dark:text-gray-200">{`${
+										posthog.person.properties
+											.$initial_geoip_city_name || "N/A"
+									}, ${
+										posthog.person.properties
+											.$initial_geoip_country_code || ""
+									}`}</span>
+								</li>
+							</ul>
+						) : (
+							<p className="text-sm text-gray-400">
+								{posthog.error || "No analytics properties."}
+							</p>
+						)}
+					</div>
 				</div>
 
-				{/* --- Right Column: Notes and Activity Feed --- */}
-				<div className="lg:col-span-2 space-y-8">
-					{/* --- New Admin Notes Card --- */}
-					<div className="bg-gray-800 rounded-lg shadow-lg p-6">
-						<h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
+				{/* Right Column */}
+				<div className="lg:col-span-2 space-y-6">
+					{/* Admin Notes Card */}
+					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
+						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
 							Admin Notes
 						</h2>
-
-						{/* Form to add a new note */}
 						<form onSubmit={handleSaveNote} className="mb-6">
 							<textarea
 								value={newNoteText}
@@ -545,12 +497,12 @@ export default function UserProfilePage() {
 								placeholder={`Add a note about ${
 									user.globalName || user.username
 								}...`}
-								className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+								className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-gray-50 border border-gray-300 dark:border-dark-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
 								rows="3"
 								disabled={isSubmittingNote}
 							/>
 							{noteError && (
-								<p className="text-xs text-red-400 mt-1">
+								<p className="text-xs text-red-500 mt-1">
 									{noteError}
 								</p>
 							)}
@@ -559,70 +511,87 @@ export default function UserProfilePage() {
 								disabled={
 									isSubmittingNote || !newNoteText.trim()
 								}
-								className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								className="mt-3 bg-primary hover:bg-primary-darker text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
 							>
 								{isSubmittingNote ? "Saving..." : "Save Note"}
 							</button>
 						</form>
-
-						{/* List of existing notes */}
-						<div className="space-y-4 max-h-[400px] overflow-y-auto">
+						<div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
 							{user.adminNotes && user.adminNotes.length > 0 ? (
-								user.adminNotes.map((note) => (
+								[...user.adminNotes].reverse().map((note) => (
 									<div
 										key={note._id}
-										className="flex items-start text-sm border-t border-gray-700 pt-3"
+										className="flex items-start text-sm border-t border-gray-200 dark:border-dark-600 pt-4"
 									>
-										<div className="flex-shrink-0">
-											<p className="font-semibold text-white">
+										<div className="flex-shrink-0 w-24 text-right">
+											<p className="font-semibold text-gray-800 dark:text-gray-200">
 												{note.authorName}
 											</p>
-											<p className="text-xs text-gray-400">
+											<p className="text-xs text-gray-500 dark:text-gray-400">
 												{formatDate(note.createdAt)}
 											</p>
 										</div>
-										<p className="ml-4 pl-4 border-l border-gray-600 text-gray-300">
+										<p className="ml-4 pl-4 border-l border-gray-300 dark:border-dark-500 text-gray-700 dark:text-gray-300">
 											{note.noteText}
 										</p>
 									</div>
 								))
 							) : (
-								<p className="text-sm text-gray-400">
+								<p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">
 									No notes have been added for this user.
 								</p>
 							)}
 						</div>
 					</div>
-
-					{/* Live Activity Feed Card */}
-					<div className="bg-gray-800 rounded-lg shadow-lg p-6">
-						<h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
+					{/* Activity Feed Card */}
+					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
+						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
 							Live Activity Feed
 						</h2>
-						<div className="space-y-4 max-h-[600px] overflow-y-auto">
+						<div className="space-y-1 max-h-[600px] overflow-y-auto pr-2">
 							{posthog.events && posthog.events.length > 0 ? (
 								posthog.events.map((event) => (
 									<div
 										key={event.id}
-										className="flex items-start text-sm"
+										className="flex items-center text-sm p-2 rounded-md hover:bg-gray-50 dark:hover:bg-dark-700/50"
 									>
-										<div className="bg-gray-700 text-gray-300 rounded-full h-8 w-8 flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-											<p>▶</p>
+										<div className="flex-shrink-0 w-8 mr-4 text-center">
+											<span
+												className="text-lg"
+												title={
+													event.event === "$pageview"
+														? "Page View"
+														: "Custom Event"
+												}
+											>
+												{event.event === "$pageview"
+													? "📄"
+													: "✨"}
+											</span>
 										</div>
-										<div>
-											<p className="font-semibold text-white">
+										<div className="flex-grow">
+											<p className="font-medium text-gray-800 dark:text-gray-200">
 												{event.event}
 											</p>
-											<p className="text-xs text-gray-400">
+											{event.event === "$pageview" && (
+												<p className="font-mono text-xs text-gray-500 dark:text-gray-400 break-all">
+													{
+														event.properties
+															.$current_url
+													}
+												</p>
+											)}
+										</div>
+										<div className="flex-shrink-0 text-right">
+											<p className="text-xs text-gray-500 dark:text-gray-400">
 												{formatDate(event.timestamp)}
 											</p>
 										</div>
 									</div>
 								))
 							) : (
-								<p className="text-sm text-gray-400">
-									{posthog.error ||
-										"No events found for this user."}
+								<p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">
+									{posthog.error || "No events found."}
 								</p>
 							)}
 						</div>
