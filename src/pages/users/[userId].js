@@ -290,7 +290,7 @@ export default function UserProfilePage() {
 						src={
 							user.avatar
 								? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`
-								: "/default-avatar.png"
+								: "/default-avatar.svg"
 						}
 						alt="User avatar"
 						width={64}
