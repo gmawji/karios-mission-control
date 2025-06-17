@@ -44,21 +44,18 @@ const UserTable = ({ users, type = "full" }) => {
 		);
 	}
 
-	const isClickable = type === "full"; // Only registered users have profile pages to link to
+	// --- Both 'full' and 'basic' user types are now clickable ---
+	const isClickable = type === "full" || type === "basic";
 
 	// Normalize user data since it comes from two different sources (Discord API vs our DB)
 	const normalizedUsers = users.map((user) => ({
-		// The Mongo _id is the canonical ID for our links
-		id: user._id,
-		// Discord API puts user data under a `user` object
+		id: user._id, // MongoDB _id (only present for 'full' type)
 		discordId: user.discordId || user.user?.id,
 		avatar: user.avatar || user.user?.avatar,
 		username: user.username || user.user?.username,
 		globalName: user.globalName || user.user?.global_name,
-		// Data only available for registered users
 		discordEmail: user.discordEmail,
 		subscriptionStatus: user.subscriptionStatus,
-		stripeCustomerId: user.stripeCustomerId,
 	}));
 
 	return (
@@ -106,6 +103,16 @@ const UserTable = ({ users, type = "full" }) => {
 				</thead>
 				<tbody className="divide-y divide-gray-200 dark:divide-dark-600">
 					{normalizedUsers.map((user) => {
+						// --- MODIFIED: Dynamically create the href based on the user type ---
+						let href = "";
+						if (type === "full") {
+							// Registered users link directly to their profile via MongoDB _id
+							href = `/users/${user.id}`;
+						} else if (type === "basic") {
+							// Other server members link to our new initiator page via Discord ID
+							href = `/users/initiate/${user.discordId}`;
+						}
+
 						const rowContent = (
 							<tr
 								key={user.discordId}
@@ -165,8 +172,8 @@ const UserTable = ({ users, type = "full" }) => {
 
 						return isClickable ? (
 							<Link
-								key={user.id}
-								href={`/users/${user.id}`}
+								key={user.discordId}
+								href={href}
 								legacyBehavior
 							>
 								{rowContent}
