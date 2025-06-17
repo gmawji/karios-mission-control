@@ -1,5 +1,4 @@
 // src/pages/users/[userId].js
-
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
@@ -100,10 +99,12 @@ export default function UserProfilePage() {
 	}, [token, userId]);
 
 	useEffect(() => {
-		if (!authLoading && isLoggedIn) {
-			fetchUserProfile();
-		} else if (!authLoading && !isLoggedIn) {
-			router.push("/");
+		if (!authLoading) {
+			if (isLoggedIn) {
+				fetchUserProfile();
+			} else {
+				router.push("/");
+			}
 		}
 	}, [isLoggedIn, authLoading, router, fetchUserProfile]);
 
