@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
+import { faSyncAlt, faUserShield } from "@fortawesome/free-solid-svg-icons";
 
 // Helper function to format dates nicely
 const formatDate = (dateString) => {
@@ -54,7 +54,7 @@ const getSubscriptionStatusDisplay = (status) => {
 };
 
 export default function UserProfilePage() {
-	const { isLoggedIn, loading: authLoading, token } = useAuth();
+	const { isLoggedIn, loading: authLoading, token, isOwner } = useAuth();
 	const router = useRouter();
 	const { userId } = router.query;
 
@@ -265,6 +265,8 @@ export default function UserProfilePage() {
 		data: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_CORE_ROLE_ID,
 		alerts: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_ALERTS_ROLE_ID,
 		bias: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_BIAS_ROLE_ID,
+		owner: process.env.NEXT_PUBLIC_OWNER_ROLE_ID,
+		ownerInvites: process.env.NEXT_PUBLIC_OWNER_INVITES_ROLE_ID,
 	};
 	const isDataRoleAssigned = user.assignedRoleIds?.includes(
 		discordRoleIds.data
@@ -274,6 +276,12 @@ export default function UserProfilePage() {
 	);
 	const isBiasRoleAssigned = user.assignedRoleIds?.includes(
 		discordRoleIds.bias
+	);
+	const isOwnerRoleAssigned = user.assignedRoleIds?.includes(
+		discordRoleIds.owner
+	);
+	const isOwnerInvitesRoleAssigned = user.assignedRoleIds?.includes(
+		discordRoleIds.ownerInvites
 	);
 
 	// --- Main Render with new styling ---
@@ -425,6 +433,93 @@ export default function UserProfilePage() {
 										)
 								)}
 							</div>
+							{/* --- Conditionally Rendered Owner-Level Actions --- */}
+							{isOwner && (
+								<div className="border-t-2 border-dashed border-yellow-500/30 pt-4 mt-4 space-y-3">
+									<h3 className="text-sm font-bold text-yellow-500 dark:text-yellow-400 flex items-center">
+										<FontAwesomeIcon
+											icon={faUserShield}
+											className="w-4 h-4 mr-2"
+										/>
+										Owner-Level Actions
+									</h3>
+									{/* Owner Role */}
+									{discordRoleIds.owner && (
+										<div className="flex justify-between items-center text-sm">
+											<span
+												className={`flex items-center text-gray-800 dark:text-gray-200 ${
+													isOwnerRoleAssigned
+														? "font-semibold text-yellow-600 dark:text-yellow-400"
+														: ""
+												}`}
+											>
+												Owner
+											</span>
+											<button
+												onClick={() =>
+													isOwnerRoleAssigned
+														? handleRevokeRole(
+																discordRoleIds.owner,
+																"Owner"
+														  )
+														: handleAssignRole(
+																discordRoleIds.owner,
+																"Owner"
+														  )
+												}
+												disabled={actionStatus.loading}
+												className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
+													isOwnerRoleAssigned
+														? "bg-red-500/20 text-red-300 hover:bg-red-500/40"
+														: "bg-green-500/20 text-green-300 hover:bg-green-500/40"
+												} disabled:opacity-50`}
+											>
+												{isOwnerRoleAssigned
+													? "Revoke"
+													: "Assign"}
+											</button>
+										</div>
+									)}
+									{/* Owner Invites Role */}
+									{discordRoleIds.ownerInvites && (
+										<div className="flex justify-between items-center text-sm">
+											<span
+												className={`text-gray-800 dark:text-gray-200 ${
+													isOwnerInvitesRoleAssigned
+														? "font-semibold"
+														: ""
+												}`}
+											>
+												Owner Invites
+											</span>
+											<button
+												onClick={() =>
+													isOwnerInvitesRoleAssigned
+														? handleRevokeRole(
+																discordRoleIds.ownerInvites,
+																"Owner Invites"
+														  )
+														: handleAssignRole(
+																discordRoleIds.ownerInvites,
+																"Owner Invites"
+														  )
+												}
+												disabled={actionStatus.loading}
+												className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
+													isOwnerInvitesRoleAssigned
+														? "bg-red-500/20 text-red-300 hover:bg-red-500/40"
+														: "bg-green-500/20 text-green-300 hover:bg-green-500/40"
+												} disabled:opacity-50`}
+											>
+												{isOwnerInvitesRoleAssigned
+													? "Revoke"
+													: "Assign"}
+											</button>
+										</div>
+									)}
+								</div>
+							)}
+
 							{actionStatus.message && (
 								<p
 									className={`text-xs mt-2 text-center ${
