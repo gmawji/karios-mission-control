@@ -17,6 +17,9 @@ export default function DashboardPage() {
 	const { isLoggedIn, loading: authLoading, token } = useAuth();
 	const router = useRouter();
 
+	const { adminUser, isOwner } = useAuth();
+	console.log("Auth Context State:", { adminUser, isOwner });
+
 	// --- State for categorized user data ---
 	const [categorizedUsers, setCategorizedUsers] = useState({
 		adminUsers: [],
