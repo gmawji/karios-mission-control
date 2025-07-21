@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSyncAlt, faUserShield } from "@fortawesome/free-solid-svg-icons";
+import { motion } from "framer-motion";
 
 // Helper function to format dates nicely
 const formatDate = (dateString) => {
@@ -283,6 +284,16 @@ export default function UserProfilePage() {
 		discordRoleIds.ownerInvites
 	);
 
+	// Animation variants for staggered lists
+	const listContainerVariants = {
+		hidden: { opacity: 0 },
+		visible: { opacity: 1, transition: { staggerChildren: 0.07 } },
+	};
+	const listItemVariants = {
+		hidden: { opacity: 0, y: 10 },
+		visible: { opacity: 1, y: 0 },
+	};
+
 	const labelClasses = "block text-sm font-medium text-text-primary mb-1";
 	const inputClasses =
 		"w-full bg-background border border-border rounded-md p-2 focus:ring-2 focus:ring-accent transition";
@@ -355,7 +366,9 @@ export default function UserProfilePage() {
 							Role Management
 						</h2>
 						<div className="space-y-3">
-							<button
+							<motion.button
+								whileHover={{ scale: 1.03 }}
+								whileTap={{ scale: 0.97 }}
 								onClick={handleSyncRoles}
 								disabled={actionStatus.loading}
 								className="w-full text-sm flex items-center justify-center bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-text-primary font-semibold py-2 px-4 rounded-md transition disabled:opacity-50"
@@ -373,7 +386,7 @@ export default function UserProfilePage() {
 								actionStatus.action === "sync"
 									? "Syncing..."
 									: "Sync Roles"}
-							</button>
+							</motion.button>
 							<div className="border-t border-border pt-3 space-y-2">
 								{Object.entries({
 									Data: isDataRoleAssigned,
@@ -589,7 +602,9 @@ export default function UserProfilePage() {
 									{noteError}
 								</p>
 							)}
-							<button
+							<motion.button
+								whileHover={{ scale: 1.03 }}
+								whileTap={{ scale: 0.97 }}
 								type="submit"
 								disabled={
 									isSubmittingNote || !newNoteText.trim()
@@ -597,12 +612,17 @@ export default function UserProfilePage() {
 								className="mt-3 bg-accent hover:bg-amber-500 text-gray-900 font-semibold py-2 px-4 rounded-md transition disabled:opacity-50"
 							>
 								{isSubmittingNote ? "Saving..." : "Save Note"}
-							</button>
+							</motion.button>
 						</form>
-						<div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+						<motion.div
+							variants={listContainerVariants}
+							initial="hidden"
+							animate="visible"
+							className="space-y-4 max-h-[400px] overflow-y-auto pr-2"
+						>
 							{user.adminNotes && user.adminNotes.length > 0 ? (
 								[...user.adminNotes].reverse().map((note) => (
-									<div
+									<motion.div
 										key={note._id}
 										className="flex items-start text-sm border-t border-border pt-4"
 									>
@@ -617,25 +637,31 @@ export default function UserProfilePage() {
 										<p className="ml-4 pl-4 border-l border-border text-text-primary">
 											{note.noteText}
 										</p>
-									</div>
+									</motion.div>
 								))
 							) : (
 								<p className="text-sm text-center text-text-muted py-4">
 									No notes have been added for this user.
 								</p>
 							)}
-						</div>
+						</motion.div>
 					</div>
 
 					<div className="bg-content rounded-xl border border-border p-6">
 						<h2 className="text-lg font-bold font-heading text-text-primary mb-4">
 							Live Activity Feed
 						</h2>
-						<div className="space-y-1 max-h-[600px] overflow-y-auto pr-2">
+						<motion.div
+							variants={listContainerVariants}
+							initial="hidden"
+							animate="visible"
+							className="space-y-1 max-h-[600px] overflow-y-auto pr-2"
+						>
 							{posthog.events && posthog.events.length > 0 ? (
 								posthog.events.map((event) => (
-									<div
+									<motion.div
 										key={event.id}
+										variants={listItemVariants}
 										className="flex items-center text-sm p-2 rounded-md hover:bg-background"
 									>
 										<div className="flex-shrink-0 w-8 mr-4 text-center">
@@ -670,14 +696,14 @@ export default function UserProfilePage() {
 												{formatDate(event.timestamp)}
 											</p>
 										</div>
-									</div>
+									</motion.div>
 								))
 							) : (
 								<p className="text-sm text-center text-text-muted py-4">
 									{posthog.error || "No events found."}
 								</p>
 							)}
-						</div>
+						</motion.div>
 					</div>
 				</div>
 			</main>

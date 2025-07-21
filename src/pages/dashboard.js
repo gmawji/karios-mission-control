@@ -1,10 +1,12 @@
 // src/pages/dashboard.js
 import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
 import PageHeader from "@/components/ui/PageHeader";
 import { Tabs, Tab } from "@/components/ui/Tabs";
 import UserTable from "@/components/UserTable";
+import ScrollReveal from "@/components/ui/ScrollReveal";
 
 const TABS = ["websiteUsers", "adminUsers", "otherUsers", "botUsers"];
 const TAB_NAMES = {
@@ -86,36 +88,59 @@ export default function DashboardPage() {
 
 	return (
 		<>
-			<PageHeader
-				title="Community Dashboard"
-				description="View and manage all members of your Discord server."
-			/>
+			<ScrollReveal>
+				<PageHeader
+					title="Community Dashboard"
+					description="View and manage all members of your Discord server."
+				/>
+			</ScrollReveal>
 
-			<Tabs activeTab={activeTab} setActiveTab={setActiveTab}>
-				{TABS.map((tabName) => (
-					<Tab
-						key={tabName}
-						label={TAB_NAMES[tabName]}
-						name={tabName}
-						count={categorizedUsers[tabName]?.length || 0}
-					/>
-				))}
-			</Tabs>
+			<ScrollReveal delay={0.1}>
+				<Tabs activeTab={activeTab} setActiveTab={setActiveTab}>
+					{TABS.map((tabName) => (
+						<Tab
+							key={tabName}
+							label={TAB_NAMES[tabName]}
+							name={tabName}
+							count={categorizedUsers[tabName]?.length || 0}
+						/>
+					))}
+				</Tabs>
+			</ScrollReveal>
 
-			<div className="mt-6">
-				{fetchLoading ? (
-					<div className="w-full h-96 bg-content rounded-xl border border-border animate-pulse" />
-				) : fetchError ? (
-					<div className="text-center p-8 bg-content rounded-xl border border-border">
-						<p className="text-destructive font-semibold">Error</p>
-						<p className="text-text-muted">{fetchError}</p>
-					</div>
-				) : (
-					<div className="bg-content rounded-xl shadow-lg border border-border overflow-hidden">
-						<UserTable users={activeUsers} type={tableType} />
-					</div>
-				)}
-			</div>
+			<ScrollReveal delay={0.2}>
+				<div className="mt-6">
+					<AnimatePresence mode="wait">
+						<motion.div
+							key={activeTab} // Animate when the activeTab changes
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -10 }}
+							transition={{ duration: 0.2, ease: "easeInOut" }}
+						>
+							{fetchLoading ? (
+								<div className="w-full h-96 bg-content rounded-xl border border-border animate-pulse" />
+							) : fetchError ? (
+								<div className="text-center p-8 bg-content rounded-xl border border-border">
+									<p className="text-destructive font-semibold">
+										Error
+									</p>
+									<p className="text-text-muted">
+										{fetchError}
+									</p>
+								</div>
+							) : (
+								<div className="bg-content rounded-xl shadow-lg border border-border overflow-hidden">
+									<UserTable
+										users={activeUsers}
+										type={tableType}
+									/>
+								</div>
+							)}
+						</motion.div>
+					</AnimatePresence>
+				</div>
+			</ScrollReveal>
 		</>
 	);
 }
