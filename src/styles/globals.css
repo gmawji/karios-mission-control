@@ -1,6 +1,41 @@
-/* src/styles/globals.css */
+/* frontend/src/styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Roboto:wght@400;500;700&display=swap');
+
 @tailwind base;
-@import "./tailux.css";
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode Palette */
+    --color-background: 255 255 255; /* #FFFFFF */
+    --color-content: 249 250 251;    /* #F9FAFB (gray-50) */
+    --color-text-primary: 26 26 26;  /* #1A1A1A */
+    --color-text-muted: 107 114 128; /* #6B7280 */
+    --color-border: 229 231 235;     /* #E5E7EB */
+
+    /* Universal Colors */
+    --color-accent: 251 191 36;      /* #FBBF24 (Karios Gold) */
+    --color-destructive: 220 38 38;  /* #DC2626 (red-600) */
+
+    /* Font Variables */
+    --font-roboto: 'Roboto', sans-serif;
+    --font-lato: 'Lato', sans-serif;
+  }
+
+  .dark {
+    /* Dark Mode Palette */
+    --color-background: 26 26 26;  /* #1A1A1A */
+    --color-content: 36 36 36;    /* #242424 */
+    --color-text-primary: 243 244 246; /* #F3F4F6 */
+    --color-text-muted: 156 163 175;   /* #9CA3AF (gray-400) */
+    --color-border: 55 65 81;      /* #374151 (gray-700) */
+  }
+
+  body {
+    @apply bg-background text-text-primary antialiased;
+  }
+}
+
+/* Import any remaining custom, non-layered styles */
 @import "./app.css";
