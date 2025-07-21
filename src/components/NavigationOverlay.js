@@ -156,37 +156,35 @@ const NavigationOverlay = ({ isOpen, onClose }) => {
 							transition={{ delay: 0.5 }}
 							className="flex-shrink-0 pt-6 mt-6 border-t border-border"
 						>
-							{user && (
-								<div className="flex justify-between items-center">
-									<div className="flex items-center gap-3">
-										<Image
-											src={
-												user.picture ||
-												"/default-avatar.svg"
-											}
-											alt="User Avatar"
-											width={40}
-											height={40}
-											className="rounded-full bg-gray-700"
-										/>
-										<div>
-											<p className="font-semibold text-text-primary">
-												{user.name}
-											</p>
-											<p className="text-sm text-text-muted">
-												Mission Control Admin
-											</p>
-										</div>
+							<div className="flex justify-between items-center">
+								<div className="flex items-center gap-3">
+									<Image
+										src={
+											user?.picture ||
+											"/default-avatar.svg"
+										}
+										alt="User Avatar"
+										width={40}
+										height={40}
+										className="rounded-full bg-gray-700"
+									/>
+									<div>
+										<p className="font-semibold text-text-primary">
+											{user?.name}
+										</p>
+										<p className="text-sm text-text-muted">
+											Mission Control Admin
+										</p>
 									</div>
-									<button
-										onClick={logout}
-										className="flex items-center gap-2 p-2 text-text-muted hover:text-destructive transition-colors"
-									>
-										<FiLogOut size={20} />
-										<span>Logout</span>
-									</button>
 								</div>
-							)}
+								<button
+									onClick={logout}
+									className="flex items-center gap-2 p-2 text-text-muted hover:text-destructive transition-colors"
+								>
+									<FiLogOut size={20} />
+									<span>Logout</span>
+								</button>
+							</div>
 						</motion.div>
 					</div>
 				</motion.div>

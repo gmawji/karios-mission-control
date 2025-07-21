@@ -24,29 +24,28 @@ const getSubscriptionStatusDisplay = (status) => {
 	status = status ? status.toLowerCase() : "none";
 	let text =
 		status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
-	let className = "px-2 py-1 text-xs font-semibold rounded-full inline-block";
+	let className =
+		"px-2.5 py-1 text-xs font-semibold rounded-full inline-block";
 	switch (status) {
 		case "active":
 		case "trialing":
 			className +=
-				" bg-green-100 text-green-800 dark:bg-green-700/30 dark:text-green-300";
+				" bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300";
 			break;
 		case "past_due":
 		case "payment_failed":
 		case "unpaid":
 			className +=
-				" bg-red-100 text-red-800 dark:bg-red-700/30 dark:text-red-300";
+				" bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300";
 			break;
 		case "incomplete":
 		case "incomplete_expired":
 			className +=
-				" bg-yellow-100 text-yellow-800 dark:bg-yellow-700/30 dark:text-yellow-300";
+				" bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-amber-300";
 			break;
-		case "canceled":
-		case "none":
 		default:
 			className +=
-				" bg-gray-200 text-gray-800 dark:bg-dark-600 dark:text-gray-200";
+				" bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200";
 			text = status === "none" ? "No Subscription" : text;
 			break;
 	}
@@ -284,85 +283,82 @@ export default function UserProfilePage() {
 		discordRoleIds.ownerInvites
 	);
 
+	const labelClasses = "block text-sm font-medium text-text-primary mb-1";
+	const inputClasses =
+		"w-full bg-background border border-border rounded-md p-2 focus:ring-2 focus:ring-accent transition";
+
 	// --- Main Render with new styling ---
 	return (
-		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-			<header className="mb-8">
-				<Link
-					href="/dashboard"
-					className="text-sm font-medium text-primary dark:text-indigo-400 hover:underline"
-				>
-					&larr; Back to Dashboard
-				</Link>
-				<div className="flex items-center mt-4">
-					<Image
-						src={
-							user.avatar
-								? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`
-								: "/default-avatar.svg"
-						}
-						alt="User avatar"
-						width={64}
-						height={64}
-						className="rounded-full mr-4"
-					/>
-					<div>
-						<h1 className="text-3xl font-bold font-heading text-gray-900 dark:text-gray-50">
-							{user.globalName || user.username}
-						</h1>
-						<p className="text-sm text-gray-600 dark:text-gray-400">
-							{user.discordEmail}
-						</p>
-					</div>
+		<>
+			<Link
+				href="/dashboard"
+				className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary mb-4 transition-colors"
+			>
+				&larr; Back to Dashboard
+			</Link>
+
+			<header className="flex items-center gap-4 mb-8">
+				<Image
+					src={
+						user.avatar
+							? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`
+							: "/default-avatar.svg"
+					}
+					alt="User avatar"
+					width={64}
+					height={64}
+					className="rounded-full bg-content"
+				/>
+				<div>
+					<h1 className="text-3xl font-bold font-heading text-text-primary">
+						{user.globalName || user.username}
+					</h1>
+					<p className="text-base text-text-muted">
+						{user.discordEmail}
+					</p>
 				</div>
 			</header>
 
 			<main className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 				{/* Left Column */}
 				<div className="lg:col-span-1 space-y-6">
-					{/* User Information Card */}
-					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
-						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
+					<div className="bg-content rounded-xl border border-border p-6">
+						<h2 className="text-lg font-bold font-heading text-text-primary mb-4">
 							User Information
 						</h2>
 						<ul className="space-y-3 text-sm">
-							<li className="flex justify-between">
-								<span className="text-gray-600 dark:text-gray-400">
-									Status
-								</span>
+							<li className="flex justify-between items-center">
+								<span className="text-text-muted">Status</span>
 								{getSubscriptionStatusDisplay(
 									user.subscriptionStatus
 								)}
 							</li>
 							<li className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-text-muted">
 									Stripe ID
 								</span>
-								<span className="font-mono text-xs bg-gray-100 dark:bg-dark-700 p-1 rounded">
+								<span className="font-mono text-xs bg-background border border-border p-1 rounded">
 									{user.stripeCustomerId || "N/A"}
 								</span>
 							</li>
-							<li className="flex justify-between">
-								<span className="text-gray-600 dark:text-gray-400">
-									Joined
-								</span>
-								<span className="text-gray-800 dark:text-gray-200">
+							<li className="flex justify-between items-center">
+								<span className="text-text-muted">Joined</span>
+								<span className="text-text-primary font-medium">
 									{formatDate(user.createdAt)}
 								</span>
 							</li>
 						</ul>
 					</div>
 
-					{/* Role Management Card */}
-					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
-						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
+					<div className="bg-content rounded-xl border border-border p-6">
+						<h2 className="text-lg font-bold font-heading text-text-primary mb-4">
 							Role Management
 						</h2>
 						<div className="space-y-3">
 							<button
 								onClick={handleSyncRoles}
 								disabled={actionStatus.loading}
-								className="w-full text-sm flex items-center justify-center bg-gray-200 hover:bg-gray-300 dark:bg-dark-600 dark:hover:bg-dark-500 text-gray-800 dark:text-gray-100 font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+								className="w-full text-sm flex items-center justify-center bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-text-primary font-semibold py-2 px-4 rounded-md transition disabled:opacity-50"
 							>
 								<FontAwesomeIcon
 									icon={faSyncAlt}
@@ -376,10 +372,9 @@ export default function UserProfilePage() {
 								{actionStatus.loading &&
 								actionStatus.action === "sync"
 									? "Syncing..."
-									: "Sync Roles with Stripe"}
+									: "Sync Roles"}
 							</button>
-							<div className="border-t border-gray-200 dark:border-dark-600 pt-3 space-y-2">
-								{/* Role Toggles */}
+							<div className="border-t border-border pt-3 space-y-2">
 								{Object.entries({
 									Data: isDataRoleAssigned,
 									Alerts: isAlertsRoleAssigned,
@@ -394,7 +389,7 @@ export default function UserProfilePage() {
 												className="flex justify-between items-center text-sm"
 											>
 												<span
-													className={`text-gray-800 dark:text-gray-200 ${
+													className={`text-text-primary ${
 														isAssigned
 															? "font-semibold"
 															: ""
@@ -421,8 +416,8 @@ export default function UserProfilePage() {
 													}
 													className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
 														isAssigned
-															? "bg-red-500/20 text-red-300 hover:bg-red-500/40"
-															: "bg-green-500/20 text-green-300 hover:bg-green-500/40"
+															? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+															: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
 													} disabled:opacity-50`}
 												>
 													{isAssigned
@@ -433,23 +428,21 @@ export default function UserProfilePage() {
 										)
 								)}
 							</div>
-							{/* --- Conditionally Rendered Owner-Level Actions --- */}
 							{isOwner && (
-								<div className="border-t-2 border-dashed border-yellow-500/30 pt-4 mt-4 space-y-3">
-									<h3 className="text-sm font-bold text-yellow-500 dark:text-yellow-400 flex items-center">
+								<div className="border-t-2 border-dashed border-accent/30 pt-4 mt-4 space-y-3">
+									<h3 className="text-sm font-bold text-accent flex items-center">
 										<FontAwesomeIcon
 											icon={faUserShield}
 											className="w-4 h-4 mr-2"
 										/>
 										Owner-Level Actions
 									</h3>
-									{/* Owner Role */}
 									{discordRoleIds.owner && (
 										<div className="flex justify-between items-center text-sm">
 											<span
-												className={`flex items-center text-gray-800 dark:text-gray-200 ${
+												className={`flex items-center text-text-primary ${
 													isOwnerRoleAssigned
-														? "font-semibold text-yellow-600 dark:text-yellow-400"
+														? "font-semibold text-accent"
 														: ""
 												}`}
 											>
@@ -470,8 +463,8 @@ export default function UserProfilePage() {
 												disabled={actionStatus.loading}
 												className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
 													isOwnerRoleAssigned
-														? "bg-red-500/20 text-red-300 hover:bg-red-500/40"
-														: "bg-green-500/20 text-green-300 hover:bg-green-500/40"
+														? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+														: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
 												} disabled:opacity-50`}
 											>
 												{isOwnerRoleAssigned
@@ -480,11 +473,10 @@ export default function UserProfilePage() {
 											</button>
 										</div>
 									)}
-									{/* Owner Invites Role */}
 									{discordRoleIds.ownerInvites && (
 										<div className="flex justify-between items-center text-sm">
 											<span
-												className={`text-gray-800 dark:text-gray-200 ${
+												className={`text-text-primary ${
 													isOwnerInvitesRoleAssigned
 														? "font-semibold"
 														: ""
@@ -507,8 +499,8 @@ export default function UserProfilePage() {
 												disabled={actionStatus.loading}
 												className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
 													isOwnerInvitesRoleAssigned
-														? "bg-red-500/20 text-red-300 hover:bg-red-500/40"
-														: "bg-green-500/20 text-green-300 hover:bg-green-500/40"
+														? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+														: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
 												} disabled:opacity-50`}
 											>
 												{isOwnerInvitesRoleAssigned
@@ -519,13 +511,12 @@ export default function UserProfilePage() {
 									)}
 								</div>
 							)}
-
 							{actionStatus.message && (
 								<p
 									className={`text-xs mt-2 text-center ${
 										actionStatus.type === "success"
-											? "text-green-500"
-											: "text-red-500"
+											? "text-green-600"
+											: "text-destructive"
 									}`}
 								>
 									{actionStatus.message}
@@ -533,36 +524,36 @@ export default function UserProfilePage() {
 							)}
 						</div>
 					</div>
-					{/* Analytics Properties Card */}
-					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
-						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
+
+					<div className="bg-content rounded-xl border border-border p-6">
+						<h2 className="text-lg font-bold font-heading text-text-primary mb-4">
 							Analytics Properties
 						</h2>
 						{posthog.person ? (
 							<ul className="space-y-3 text-sm">
 								<li className="flex justify-between">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-text-muted">
 										First Seen
-									</span>{" "}
-									<span className="text-gray-800 dark:text-gray-200">
+									</span>
+									<span className="text-text-primary font-medium">
 										{formatDate(posthog.person.created_at)}
 									</span>
 								</li>
 								<li className="flex justify-between">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-text-muted">
 										Last Seen
-									</span>{" "}
-									<span className="text-gray-800 dark:text-gray-200">
+									</span>
+									<span className="text-text-primary font-medium">
 										{formatDate(
 											posthog.person.properties.last_seen
 										)}
 									</span>
 								</li>
 								<li className="flex justify-between">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-text-muted">
 										Location
-									</span>{" "}
-									<span className="text-gray-800 dark:text-gray-200">{`${
+									</span>
+									<span className="text-text-primary font-medium">{`${
 										posthog.person.properties
 											.$initial_geoip_city_name || "N/A"
 									}, ${
@@ -572,7 +563,7 @@ export default function UserProfilePage() {
 								</li>
 							</ul>
 						) : (
-							<p className="text-sm text-gray-400">
+							<p className="text-sm text-text-muted">
 								{posthog.error || "No analytics properties."}
 							</p>
 						)}
@@ -581,24 +572,20 @@ export default function UserProfilePage() {
 
 				{/* Right Column */}
 				<div className="lg:col-span-2 space-y-6">
-					{/* Admin Notes Card */}
-					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
-						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
+					<div className="bg-content rounded-xl border border-border p-6">
+						<h2 className="text-lg font-bold font-heading text-text-primary mb-4">
 							Admin Notes
 						</h2>
 						<form onSubmit={handleSaveNote} className="mb-6">
 							<textarea
 								value={newNoteText}
 								onChange={(e) => setNewNoteText(e.target.value)}
-								placeholder={`Add a note about ${
-									user.globalName || user.username
-								}...`}
-								className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-gray-50 border border-gray-300 dark:border-dark-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-								rows="3"
+								placeholder={`Add a note...`}
+								className={`${inputClasses} min-h-[80px]`}
 								disabled={isSubmittingNote}
 							/>
 							{noteError && (
-								<p className="text-xs text-red-500 mt-1">
+								<p className="text-xs text-destructive mt-1">
 									{noteError}
 								</p>
 							)}
@@ -607,7 +594,7 @@ export default function UserProfilePage() {
 								disabled={
 									isSubmittingNote || !newNoteText.trim()
 								}
-								className="mt-3 bg-primary hover:bg-primary-darker text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+								className="mt-3 bg-accent hover:bg-amber-500 text-gray-900 font-semibold py-2 px-4 rounded-md transition disabled:opacity-50"
 							>
 								{isSubmittingNote ? "Saving..." : "Save Note"}
 							</button>
@@ -617,31 +604,31 @@ export default function UserProfilePage() {
 								[...user.adminNotes].reverse().map((note) => (
 									<div
 										key={note._id}
-										className="flex items-start text-sm border-t border-gray-200 dark:border-dark-600 pt-4"
+										className="flex items-start text-sm border-t border-border pt-4"
 									>
 										<div className="flex-shrink-0 w-24 text-right">
-											<p className="font-semibold text-gray-800 dark:text-gray-200">
+											<p className="font-semibold text-text-primary">
 												{note.authorName}
 											</p>
-											<p className="text-xs text-gray-500 dark:text-gray-400">
+											<p className="text-xs text-text-muted">
 												{formatDate(note.createdAt)}
 											</p>
 										</div>
-										<p className="ml-4 pl-4 border-l border-gray-300 dark:border-dark-500 text-gray-700 dark:text-gray-300">
+										<p className="ml-4 pl-4 border-l border-border text-text-primary">
 											{note.noteText}
 										</p>
 									</div>
 								))
 							) : (
-								<p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">
+								<p className="text-sm text-center text-text-muted py-4">
 									No notes have been added for this user.
 								</p>
 							)}
 						</div>
 					</div>
-					{/* Activity Feed Card */}
-					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 p-6">
-						<h2 className="text-lg font-bold font-heading text-gray-900 dark:text-gray-50 mb-4">
+
+					<div className="bg-content rounded-xl border border-border p-6">
+						<h2 className="text-lg font-bold font-heading text-text-primary mb-4">
 							Live Activity Feed
 						</h2>
 						<div className="space-y-1 max-h-[600px] overflow-y-auto pr-2">
@@ -649,7 +636,7 @@ export default function UserProfilePage() {
 								posthog.events.map((event) => (
 									<div
 										key={event.id}
-										className="flex items-center text-sm p-2 rounded-md hover:bg-gray-50 dark:hover:bg-dark-700/50"
+										className="flex items-center text-sm p-2 rounded-md hover:bg-background"
 									>
 										<div className="flex-shrink-0 w-8 mr-4 text-center">
 											<span
@@ -666,11 +653,11 @@ export default function UserProfilePage() {
 											</span>
 										</div>
 										<div className="flex-grow">
-											<p className="font-medium text-gray-800 dark:text-gray-200">
+											<p className="font-medium text-text-primary">
 												{event.event}
 											</p>
 											{event.event === "$pageview" && (
-												<p className="font-mono text-xs text-gray-500 dark:text-gray-400 break-all">
+												<p className="font-mono text-xs text-text-muted break-all">
 													{
 														event.properties
 															.$current_url
@@ -679,14 +666,14 @@ export default function UserProfilePage() {
 											)}
 										</div>
 										<div className="flex-shrink-0 text-right">
-											<p className="text-xs text-gray-500 dark:text-gray-400">
+											<p className="text-xs text-text-muted">
 												{formatDate(event.timestamp)}
 											</p>
 										</div>
 									</div>
 								))
 							) : (
-								<p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">
+								<p className="text-sm text-center text-text-muted py-4">
 									{posthog.error || "No events found."}
 								</p>
 							)}
@@ -694,6 +681,6 @@ export default function UserProfilePage() {
 					</div>
 				</div>
 			</main>
-		</div>
+		</>
 	);
 }

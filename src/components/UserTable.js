@@ -1,55 +1,27 @@
-// src/components/UserTable.js
+// karios-mission-control/src/components/UserTable.js
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-// We'll move the status display helper here so the table is self-contained.
-const getSubscriptionStatusDisplay = (status) => {
-	status = status ? status.toLowerCase() : "none";
-	let text =
-		status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
-	let className = "px-2 py-1 text-xs font-semibold rounded-full inline-block";
-	switch (status) {
-		case "active":
-		case "trialing":
-			className +=
-				" bg-green-100 text-green-800 dark:bg-green-700/30 dark:text-green-300";
-			break;
-		case "past_due":
-		case "payment_failed":
-		case "unpaid":
-			className +=
-				" bg-red-100 text-red-800 dark:bg-red-700/30 dark:text-red-300";
-			break;
-		default:
-			className +=
-				" bg-gray-200 text-gray-800 dark:bg-dark-600 dark:text-gray-200";
-			text = status === "none" ? "No Subscription" : text;
-			break;
-	}
-	return <span className={className}>{text}</span>;
-};
+import StatusBadge from "./ui/StatusBadge";
 
 /**
  * A reusable table for displaying different types of users.
- * @param {Array} users - The array of user/member objects to display.
- * @param {('full'|'basic'|'bot')} type - The type of table to render. 'full' for registered users, 'basic' for others.
+ * @param {object} props - The component props.
+ * @param {Array} props.users - The array of user/member objects to display.
+ * @param {('full'|'basic'|'bot')} props.type - The type of table to render.
+ * @returns {JSX.Element} The rendered UserTable component.
  */
 const UserTable = ({ users, type = "full" }) => {
 	if (!users || users.length === 0) {
 		return (
-			<p className="text-center text-gray-500 dark:text-gray-400 py-8">
+			<p className="py-8 text-center text-text-muted">
 				No users in this category.
 			</p>
 		);
 	}
 
-	// --- Both 'full' and 'basic' user types are now clickable ---
-	const isClickable = type === "full" || type === "basic";
-
-	// Normalize user data since it comes from two different sources (Discord API vs our DB)
 	const normalizedUsers = users.map((user) => ({
-		id: user._id, // MongoDB _id (only present for 'full' type)
+		id: user._id,
 		discordId: user.discordId || user.user?.id,
 		avatar: user.avatar || user.user?.avatar,
 		username: user.username || user.user?.username,
@@ -60,67 +32,48 @@ const UserTable = ({ users, type = "full" }) => {
 
 	return (
 		<div className="overflow-x-auto">
-			<table className="min-w-full">
-				<thead className="bg-gray-50 dark:bg-dark-700/50">
+			<table className="min-w-full text-sm">
+				<thead className="bg-content">
 					<tr>
-						<th
-							scope="col"
-							className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-						>
+						<th className="px-6 py-3 text-left font-semibold text-text-muted uppercase tracking-wider">
 							User
 						</th>
 						{type === "full" && (
-							<th
-								scope="col"
-								className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-							>
+							<th className="px-6 py-3 text-left font-semibold text-text-muted uppercase tracking-wider">
 								Email
 							</th>
 						)}
 						{type === "full" && (
-							<th
-								scope="col"
-								className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-							>
+							<th className="px-6 py-3 text-left font-semibold text-text-muted uppercase tracking-wider">
 								Status
 							</th>
 						)}
 						{type === "bot" && (
-							<th
-								scope="col"
-								className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-							>
-								Bot Tag
+							<th className="px-6 py-3 text-left font-semibold text-text-muted uppercase tracking-wider">
+								Tag
 							</th>
 						)}
-						<th
-							scope="col"
-							className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-						>
+						<th className="px-6 py-3 text-left font-semibold text-text-muted uppercase tracking-wider">
 							Discord ID
 						</th>
 					</tr>
 				</thead>
-				<tbody className="divide-y divide-gray-200 dark:divide-dark-600">
+				<tbody className="bg-content divide-y divide-border">
 					{normalizedUsers.map((user) => {
-						// --- MODIFIED: Dynamically create the href based on the user type ---
+						// --- RESTORED LOGIC ---
+						const isClickable = type === "full" || type === "basic";
 						let href = "";
 						if (type === "full") {
-							// Registered users link directly to their profile via MongoDB _id
 							href = `/users/${user.id}`;
 						} else if (type === "basic") {
-							// Other server members link to our new initiator page via Discord ID
 							href = `/users/initiate/${user.discordId}`;
 						}
 
 						const rowContent = (
 							<tr
-								key={user.discordId}
-								className={`${
-									isClickable
-										? "hover:bg-gray-50 dark:hover:bg-dark-700 cursor-pointer"
-										: ""
-								} transition-colors`}
+								className={`transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
+									isClickable ? "cursor-pointer" : ""
+								}`}
 							>
 								<td className="px-6 py-4 whitespace-nowrap">
 									<div className="flex items-center">
@@ -138,7 +91,7 @@ const UserTable = ({ users, type = "full" }) => {
 											/>
 										</div>
 										<div className="ml-4">
-											<div className="text-sm font-medium text-gray-900 dark:text-gray-50">
+											<div className="font-medium text-text-primary">
 												{user.globalName ||
 													user.username}
 											</div>
@@ -146,40 +99,43 @@ const UserTable = ({ users, type = "full" }) => {
 									</div>
 								</td>
 								{type === "full" && (
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-										{user.discordEmail}
+									<td className="px-6 py-4 whitespace-nowrap text-text-muted">
+										{user.discordEmail || "N/A"}
 									</td>
 								)}
 								{type === "full" && (
 									<td className="px-6 py-4 whitespace-nowrap">
-										{getSubscriptionStatusDisplay(
-											user.subscriptionStatus
-										)}
+										<StatusBadge
+											status={user.subscriptionStatus}
+										/>
 									</td>
 								)}
 								{type === "bot" && (
 									<td className="px-6 py-4 whitespace-nowrap">
-										<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-700/30 dark:text-blue-300">
-											BOT
-										</span>
+										<StatusBadge status="bot" />
 									</td>
 								)}
-								<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
+								<td className="px-6 py-4 whitespace-nowrap text-text-muted font-mono">
 									{user.discordId}
 								</td>
 							</tr>
 						);
 
+						// --- RESTORED LOGIC ---
 						return isClickable ? (
 							<Link
 								key={user.discordId}
 								href={href}
 								legacyBehavior
 							>
+								{/* Using legacyBehavior to allow the <tr> to be the child of Link */}
 								{rowContent}
 							</Link>
 						) : (
-							rowContent
+							// Use a React Fragment for the key when the row isn't a link
+							<React.Fragment key={user.discordId}>
+								{rowContent}
+							</React.Fragment>
 						);
 					})}
 				</tbody>

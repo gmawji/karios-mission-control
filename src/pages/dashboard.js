@@ -1,9 +1,10 @@
 // src/pages/dashboard.js
-
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
-import UserTable from "@/components/UserTable"; // Import our new reusable component
+import PageHeader from "@/components/ui/PageHeader";
+import { Tabs, Tab } from "@/components/ui/Tabs";
+import UserTable from "@/components/UserTable";
 
 const TABS = ["websiteUsers", "adminUsers", "otherUsers", "botUsers"];
 const TAB_NAMES = {
@@ -13,14 +14,14 @@ const TAB_NAMES = {
 	botUsers: "Bots",
 };
 
+/**
+ * Renders the main dashboard for viewing and managing community members.
+ * @returns {JSX.Element} The rendered DashboardPage component.
+ */
 export default function DashboardPage() {
 	const { isLoggedIn, loading: authLoading, token } = useAuth();
 	const router = useRouter();
 
-	const { adminUser, isOwner } = useAuth();
-	console.log("Auth Context State:", { adminUser, isOwner });
-
-	// --- State for categorized user data ---
 	const [categorizedUsers, setCategorizedUsers] = useState({
 		adminUsers: [],
 		websiteUsers: [],
@@ -31,14 +32,6 @@ export default function DashboardPage() {
 	const [fetchError, setFetchError] = useState(null);
 	const [activeTab, setActiveTab] = useState("websiteUsers");
 
-	// Route protection
-	useEffect(() => {
-		if (!authLoading && !isLoggedIn) {
-			router.push("/");
-		}
-	}, [isLoggedIn, authLoading, router]);
-
-	// Data fetching logic, now targets the new endpoint
 	const fetchAllServerMembers = useCallback(async () => {
 		if (token) {
 			setFetchLoading(true);
@@ -66,22 +59,24 @@ export default function DashboardPage() {
 		}
 	}, [token]);
 
-	// Effect to fetch users on initial load
 	useEffect(() => {
-		fetchAllServerMembers();
-	}, [fetchAllServerMembers]);
+		if (!authLoading && !isLoggedIn) {
+			router.push("/");
+		}
+		if (isLoggedIn) {
+			fetchAllServerMembers();
+		}
+	}, [isLoggedIn, authLoading, router, fetchAllServerMembers]);
 
 	if (authLoading || !isLoggedIn) {
 		return (
-			<div className="min-h-screen flex items-center justify-center">
+			<div className="flex items-center justify-center h-screen bg-background text-text-primary">
 				Loading...
 			</div>
 		);
 	}
 
 	const activeUsers = categorizedUsers[activeTab] || [];
-
-	// Determine the table type for the reusable component
 	const tableType =
 		activeTab === "botUsers"
 			? "bot"
@@ -90,52 +85,37 @@ export default function DashboardPage() {
 			: "full";
 
 	return (
-		<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-			<header className="mb-8">
-				<h1 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 dark:text-gray-50">
-					Community Dashboard
-				</h1>
-				<p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
-					View and manage all members of your Discord server.
-				</p>
-			</header>
+		<>
+			<PageHeader
+				title="Community Dashboard"
+				description="View and manage all members of your Discord server."
+			/>
 
-			<main>
-				{/* Tab Navigation */}
-				<div className="border-b border-gray-200 dark:border-dark-600 mb-6">
-					<nav className="-mb-px flex space-x-6" aria-label="Tabs">
-						{TABS.map((tab) => (
-							<button
-								key={tab}
-								onClick={() => setActiveTab(tab)}
-								className={`${
-									activeTab === tab
-										? "border-primary dark:border-indigo-400 text-primary dark:text-indigo-400"
-										: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-dark-500"
-								} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-							>
-								{TAB_NAMES[tab]}
-								<span className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-dark-600 text-gray-800 dark:text-gray-200">
-									{categorizedUsers[tab]?.length || 0}
-								</span>
-							</button>
-						))}
-					</nav>
-				</div>
+			<Tabs activeTab={activeTab} setActiveTab={setActiveTab}>
+				{TABS.map((tabName) => (
+					<Tab
+						key={tabName}
+						label={TAB_NAMES[tabName]}
+						name={tabName}
+						count={categorizedUsers[tabName]?.length || 0}
+					/>
+				))}
+			</Tabs>
 
-				{/* Table Display */}
+			<div className="mt-6">
 				{fetchLoading ? (
-					<p className="text-gray-500 dark:text-gray-400">
-						Loading all server members...
-					</p>
+					<div className="w-full h-96 bg-content rounded-xl border border-border animate-pulse" />
 				) : fetchError ? (
-					<p className="text-red-500">Error: {fetchError}</p>
+					<div className="text-center p-8 bg-content rounded-xl border border-border">
+						<p className="text-destructive font-semibold">Error</p>
+						<p className="text-text-muted">{fetchError}</p>
+					</div>
 				) : (
-					<div className="bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-600 overflow-hidden">
+					<div className="bg-content rounded-xl shadow-lg border border-border overflow-hidden">
 						<UserTable users={activeUsers} type={tableType} />
 					</div>
 				)}
-			</main>
-		</div>
+			</div>
+		</>
 	);
 }
