@@ -5,7 +5,12 @@ import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSyncAlt, faUserShield } from "@fortawesome/free-solid-svg-icons";
+import {
+	faSyncAlt,
+	faUserShield,
+	faCalendarWeek,
+	faCalendarDays,
+} from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 
 // Helper function to format dates nicely
@@ -20,7 +25,7 @@ const formatDate = (dateString) => {
 	});
 };
 
-// Recreated Status Badge Component for subscription status
+// Status Badge Component for subscription status
 const getSubscriptionStatusDisplay = (status) => {
 	status = status ? status.toLowerCase() : "none";
 	let text =
@@ -261,28 +266,49 @@ export default function UserProfilePage() {
 	const { db: user, posthog } = profileData;
 
 	// --- Get Role IDs from Environment Variables ---
-	const discordRoleIds = {
+	const weeklyRoleIds = {
 		data: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_CORE_ROLE_ID,
-		alerts: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_ALERTS_ROLE_ID,
 		bias: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_BIAS_ROLE_ID,
+		market: process.env.NEXT_PUBLIC_KARIOS_WEEKLY_ROLE_ID_MARKET_BIAS,
+	};
+	const sundayRoleIds = {
+		data: process.env.NEXT_PUBLIC_KARIOS_SUNDAY_SENTIMENT_ROLE_ID,
+		bias: process.env.NEXT_PUBLIC_KARIOS_SUNDAY_ROLE_ID_OVERLAY_BIAS,
+		market: process.env.NEXT_PUBLIC_KARIOS_SUNDAY_ROLE_ID_MARKET_BIAS,
+	};
+	const dailyRoleIds = {
+		data: process.env.NEXT_PUBLIC_KARIOS_DAILY_SENTIMENT_ROLE_ID,
+		bias: process.env.NEXT_PUBLIC_KARIOS_DAILY_ROLE_ID_OVERLAY_BIAS,
+		market: process.env.NEXT_PUBLIC_KARIOS_DAILY_ROLE_ID_MARKET_BIAS,
+	};
+	const adminRoleIds = {
 		owner: process.env.NEXT_PUBLIC_OWNER_ROLE_ID,
 		ownerInvites: process.env.NEXT_PUBLIC_OWNER_INVITES_ROLE_ID,
 	};
-	const isDataRoleAssigned = user.assignedRoleIds?.includes(
-		discordRoleIds.data
-	);
-	const isAlertsRoleAssigned = user.assignedRoleIds?.includes(
-		discordRoleIds.alerts
-	);
-	const isBiasRoleAssigned = user.assignedRoleIds?.includes(
-		discordRoleIds.bias
-	);
-	const isOwnerRoleAssigned = user.assignedRoleIds?.includes(
-		discordRoleIds.owner
-	);
-	const isOwnerInvitesRoleAssigned = user.assignedRoleIds?.includes(
-		discordRoleIds.ownerInvites
-	);
+
+	// --- Create distinct boolean checks for each role category ---
+	const userRoles = new Set(user.assignedRoleIds || []);
+	const assignedRoles = {
+		daily: {
+			data: userRoles.has(dailyRoleIds.data),
+			bias: userRoles.has(dailyRoleIds.bias),
+			market: userRoles.has(dailyRoleIds.market),
+		},
+		weekly: {
+			data: userRoles.has(weeklyRoleIds.data),
+			bias: userRoles.has(weeklyRoleIds.bias),
+			market: userRoles.has(weeklyRoleIds.market),
+		},
+		sunday: {
+			data: userRoles.has(sundayRoleIds.data),
+			bias: userRoles.has(sundayRoleIds.bias),
+			market: userRoles.has(sundayRoleIds.market),
+		},
+		admin: {
+			owner: userRoles.has(adminRoleIds.owner),
+			ownerInvites: userRoles.has(adminRoleIds.ownerInvites),
+		},
+	};
 
 	// Animation variants for staggered lists
 	const listContainerVariants = {
@@ -387,18 +413,87 @@ export default function UserProfilePage() {
 									? "Syncing..."
 									: "Sync Roles"}
 							</motion.button>
+							{/* Daily Roles */}
 							<div className="border-t border-border pt-3 space-y-2">
+								<h3 className="text-sm font-bold text-accent flex items-center">
+									<FontAwesomeIcon
+										icon={faCalendarDays}
+										className="w-4 h-4 mr-2"
+									/>
+									Daily Roles
+								</h3>
 								{Object.entries({
-									Data: isDataRoleAssigned,
-									Alerts: isAlertsRoleAssigned,
-									Bias: isBiasRoleAssigned,
+									Data: assignedRoles.daily.data,
+									Bias: assignedRoles.daily.bias,
+									Market: assignedRoles.daily.market,
 								}).map(
 									([roleKey, isAssigned]) =>
-										discordRoleIds[
+										dailyRoleIds[roleKey.toLowerCase()] && (
+											<div
+												key={`daily-${roleKey}`}
+												className="flex justify-between items-center text-sm"
+											>
+												<span
+													className={`text-text-primary ${
+														isAssigned
+															? "font-semibold"
+															: ""
+													}`}
+												>{`Daily ${roleKey}`}</span>
+												<button
+													onClick={() =>
+														isAssigned
+															? handleRevokeRole(
+																	dailyRoleIds[
+																		roleKey.toLowerCase()
+																	],
+																	`Daily ${roleKey}`
+															  )
+															: handleAssignRole(
+																	dailyRoleIds[
+																		roleKey.toLowerCase()
+																	],
+																	`Daily ${roleKey}`
+															  )
+													}
+													disabled={
+														actionStatus.loading
+													}
+													className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
+														isAssigned
+															? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+															: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
+													} disabled:opacity-50`}
+												>
+													{isAssigned
+														? "Revoke"
+														: "Assign"}
+												</button>
+											</div>
+										)
+								)}
+							</div>
+
+							{/* Weekly Roles */}
+							<div className="border-t-2 border-dashed border-accent/30 pt-4 mt-4 space-y-3">
+								<h3 className="text-sm font-bold text-accent flex items-center">
+									<FontAwesomeIcon
+										icon={faCalendarWeek}
+										className="w-4 h-4 mr-2"
+									/>
+									Weekly Roles
+								</h3>
+								{Object.entries({
+									Data: assignedRoles.weekly.data,
+									Bias: assignedRoles.weekly.bias,
+									Market: assignedRoles.weekly.market,
+								}).map(
+									([roleKey, isAssigned]) =>
+										weeklyRoleIds[
 											roleKey.toLowerCase()
 										] && (
 											<div
-												key={roleKey}
+												key={`weekly-${roleKey}`}
 												className="flex justify-between items-center text-sm"
 											>
 												<span
@@ -412,13 +507,13 @@ export default function UserProfilePage() {
 													onClick={() =>
 														isAssigned
 															? handleRevokeRole(
-																	discordRoleIds[
+																	weeklyRoleIds[
 																		roleKey.toLowerCase()
 																	],
 																	`Weekly ${roleKey}`
 															  )
 															: handleAssignRole(
-																	discordRoleIds[
+																	weeklyRoleIds[
 																		roleKey.toLowerCase()
 																	],
 																	`Weekly ${roleKey}`
@@ -441,6 +536,70 @@ export default function UserProfilePage() {
 										)
 								)}
 							</div>
+
+							{/* Sunday Roles */}
+							<div className="border-t-2 border-dashed border-accent/30 pt-4 mt-4 space-y-3">
+								<h3 className="text-sm font-bold text-accent flex items-center">
+									<FontAwesomeIcon
+										icon={faCalendarWeek}
+										className="w-4 h-4 mr-2"
+									/>
+									Sunday Roles
+								</h3>
+								{Object.entries({
+									Data: assignedRoles.sunday.data,
+									Bias: assignedRoles.sunday.bias,
+									Market: assignedRoles.sunday.market,
+								}).map(
+									([roleKey, isAssigned]) =>
+										sundayRoleIds[
+											roleKey.toLowerCase()
+										] && (
+											<div
+												key={`sunday-${roleKey}`}
+												className="flex justify-between items-center text-sm"
+											>
+												<span
+													className={`text-text-primary ${
+														isAssigned
+															? "font-semibold"
+															: ""
+													}`}
+												>{`Sunday ${roleKey}`}</span>
+												<button
+													onClick={() =>
+														isAssigned
+															? handleRevokeRole(
+																	sundayRoleIds[
+																		roleKey.toLowerCase()
+																	],
+																	`Sunday ${roleKey}`
+															  )
+															: handleAssignRole(
+																	sundayRoleIds[
+																		roleKey.toLowerCase()
+																	],
+																	`Sunday ${roleKey}`
+															  )
+													}
+													disabled={
+														actionStatus.loading
+													}
+													className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
+														isAssigned
+															? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+															: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
+													} disabled:opacity-50`}
+												>
+													{isAssigned
+														? "Revoke"
+														: "Assign"}
+												</button>
+											</div>
+										)
+								)}
+							</div>
+							{/* Admin/Owner Roles */}
 							{isOwner && (
 								<div className="border-t-2 border-dashed border-accent/30 pt-4 mt-4 space-y-3">
 									<h3 className="text-sm font-bold text-accent flex items-center">
@@ -450,11 +609,11 @@ export default function UserProfilePage() {
 										/>
 										Owner-Level Actions
 									</h3>
-									{discordRoleIds.owner && (
+									{adminRoleIds.owner && (
 										<div className="flex justify-between items-center text-sm">
 											<span
 												className={`flex items-center text-text-primary ${
-													isOwnerRoleAssigned
+													assignedRoles.admin.owner
 														? "font-semibold text-accent"
 														: ""
 												}`}
@@ -463,34 +622,35 @@ export default function UserProfilePage() {
 											</span>
 											<button
 												onClick={() =>
-													isOwnerRoleAssigned
+													assignedRoles.admin.owner
 														? handleRevokeRole(
-																discordRoleIds.owner,
+																adminRoleIds.owner,
 																"Owner"
 														  )
 														: handleAssignRole(
-																discordRoleIds.owner,
+																adminRoleIds.owner,
 																"Owner"
 														  )
 												}
 												disabled={actionStatus.loading}
 												className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
-													isOwnerRoleAssigned
+													assignedRoles.admin.owner
 														? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
 														: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
 												} disabled:opacity-50`}
 											>
-												{isOwnerRoleAssigned
+												{assignedRoles.admin.owner
 													? "Revoke"
 													: "Assign"}
 											</button>
 										</div>
 									)}
-									{discordRoleIds.ownerInvites && (
+									{adminRoleIds.ownerInvites && (
 										<div className="flex justify-between items-center text-sm">
 											<span
 												className={`text-text-primary ${
-													isOwnerInvitesRoleAssigned
+													assignedRoles.admin
+														.ownerInvites
 														? "font-semibold"
 														: ""
 												}`}
@@ -499,24 +659,27 @@ export default function UserProfilePage() {
 											</span>
 											<button
 												onClick={() =>
-													isOwnerInvitesRoleAssigned
+													assignedRoles.admin
+														.ownerInvites
 														? handleRevokeRole(
-																discordRoleIds.ownerInvites,
+																adminRoleIds.ownerInvites,
 																"Owner Invites"
 														  )
 														: handleAssignRole(
-																discordRoleIds.ownerInvites,
+																adminRoleIds.ownerInvites,
 																"Owner Invites"
 														  )
 												}
 												disabled={actionStatus.loading}
 												className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
-													isOwnerInvitesRoleAssigned
+													assignedRoles.admin
+														.ownerInvites
 														? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
 														: "bg-green-500/10 text-green-600 hover:bg-green-500/20"
 												} disabled:opacity-50`}
 											>
-												{isOwnerInvitesRoleAssigned
+												{assignedRoles.admin
+													.ownerInvites
 													? "Revoke"
 													: "Assign"}
 											</button>
