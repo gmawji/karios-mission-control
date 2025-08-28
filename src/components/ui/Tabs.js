@@ -8,7 +8,10 @@ import React from "react";
  */
 export const Tabs = ({ children, activeTab, setActiveTab }) => (
 	<div className="border-b border-border">
-		<nav className="-mb-px flex space-x-6" aria-label="Tabs">
+		<nav
+			className="-mb-px flex space-x-6 overflow-x-auto whitespace-nowrap"
+			aria-label="Tabs"
+		>
 			{React.Children.map(children, (child) =>
 				React.cloneElement(child, { activeTab, setActiveTab })
 			)}
